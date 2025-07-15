@@ -13,6 +13,7 @@ export async function admins(req, res) {
     res.status(500).json({ message: "Server Error" });
   }
 }
+//commit
 //get single-admin
 export async function single_admin(req, res) {
   try {
