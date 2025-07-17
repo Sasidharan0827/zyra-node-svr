@@ -8,9 +8,6 @@ const productSchema = new mongoose.Schema({
   description: { type: String },
   oldPrice: { type: String, required: true },
   newPrice: { type: String, required: true },
-  link: { type: String },
-  likeLink: { type: String },
-  cartLink: { type: String },
 });
 
 export default mongoose.model("Products", productSchema);

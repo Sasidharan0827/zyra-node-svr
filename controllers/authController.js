@@ -29,13 +29,13 @@ export async function single_user(req, res) {
 //login
 export async function login(req, res) {
   try {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
+    if (!phone || !password)
+      return res.status(400).json({ message: "Phone and password required" });
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ phone });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
     // Compare password
@@ -48,7 +48,9 @@ export async function login(req, res) {
       expiresIn: "1h",
     });
 
-    res.status(200).json({ token, userId: user._id });
+    res
+      .status(200)
+      .json({ msg: "Sucessfully Loged in", token, userId: user._id });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ message: "Server error" });
@@ -59,6 +61,8 @@ export async function login(req, res) {
 export async function register(req, res) {
   try {
     const { name, email, password, address, phone, pincode } = req.body;
+
+    console.log("resgiter", req.body);
 
     if (!email || !password)
       return res.status(400).json({ message: "Email and password required" });
@@ -73,6 +77,7 @@ export async function register(req, res) {
       name,
       email,
       address,
+      password,
       phone,
       pincode,
     });
