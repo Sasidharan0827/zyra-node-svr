@@ -10,6 +10,7 @@ export const addCart = async (req, res) => {
     }
 
     const newtoCart = new Cart({ userId, productId });
+    console.log(newtoCart);
     await newtoCart.save();
 
     res.status(200).json({ msg: "Added to  Cart", newtoCart });
