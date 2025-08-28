@@ -1,5 +1,6 @@
 // routes/authRoutes.js
 import express from "express";
+const router = express.Router();
 import {
   login,
   register,
@@ -8,7 +9,6 @@ import {
   users,
   single_user,
 } from "../../controllers/authController.js";
-const router = express.Router();
 
 // Test route
 router.get("/users", users);

@@ -1,134 +1,108 @@
-import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import User from "../models/userModel.js";
 
-//get users
-export async function users(req, res) {
+// ---------------- REGISTER ----------------
+export const register = async (req, res) => {
   try {
-    const allUsers = await User.find();
-    res.status(201).json({ message: "Users", allUsers });
-  } catch (err) {
-    console.log(" Error on fetching users ", err);
-    res.status(500).json({ message: "Server Error" });
-  }
-}
+    const { name, email, password, address, phone, pincode } = req.body;
 
-//get single-user
-export async function single_user(req, res) {
-  try {
-    const { id } = req.params;
-    if (!id) return res.status(400).json({ meassage: "Id is Required" });
-    const user = await User.findOne({ _id: id });
-    if (!user) return res.status(404).json({ message: "User Not Found" });
-    res.status(201).json({ meassage: "User Found", user });
+    if (!name || !email || !password || !address || !phone || !pincode) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ phone });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "User already exists with this phone" });
+    }
+
+    // Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      address,
+      phone,
+      pincode,
+    });
+
+    await user.save();
+
+    res
+      .status(201)
+      .json({ message: "User registered successfully", userId: user._id });
   } catch (err) {
-    console.log(" Error on fetch user ", err);
-    res.status(500).json({ message: "Server Error" });
+    console.error("Register error:", err);
+    res.status(500).json({ message: "Server error" });
   }
-}
-//login
-export async function login(req, res) {
+};
+
+// ---------------- LOGIN ----------------
+export const login = async (req, res) => {
   try {
     const { phone, password } = req.body;
 
-    if (!phone || !password)
+    if (!phone || !password) {
       return res.status(400).json({ message: "Phone and password required" });
+    }
 
-    // Find user by email
+    // Find user by phone
     const user = await User.findOne({ phone });
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
-
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
+    if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Check if password is already hashed in DB
+    let isMatch = false;
+    if (user.password.startsWith("$2b$")) {
+      // Properly hashed password → compare
+      isMatch = await bcrypt.compare(password, user.password);
+    } else {
+      // Old plain-text password → rehash it
+      if (password === user.password) {
+        user.password = await bcrypt.hash(user.password, 10);
+        await user.save();
+        isMatch = true;
+      }
+    }
+
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     // Generate JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    res
-      .status(200)
-      .json({ msg: "Sucessfully Loged in", token, userId: user._id });
+    res.status(200).json({
+      message: "Successfully Logged in",
+      token,
+      userId: user._id,
+    });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ message: "Server error" });
   }
-}
+};
+// Placeholder exports for missing functions to resolve import errors
+export const update = (req, res) => {
+  res.status(501).json({ message: "Not implemented" });
+};
 
-//register
-export async function register(req, res) {
-  try {
-    const { name, email, password, address, phone, pincode } = req.body;
+export const remove = (req, res) => {
+  res.status(501).json({ message: "Not implemented" });
+};
 
-    console.log("resgiter", req.body);
+export const users = (req, res) => {
+  res.status(501).json({ message: "Not implemented" });
+};
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(409).json({ message: "User already exists" });
-
-    // Create and save new user (password is hashed in pre-save hook)
-    const newUser = new User({
-      name,
-      email,
-      address,
-      password,
-      phone,
-      pincode,
-    });
-    await newUser.save();
-
-    // Generate JWT token
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    // Respond with token and user ID
-    res.status(201).json({
-      message: "User registered successfully",
-      token,
-      userId: newUser._id,
-    });
-  } catch (err) {
-    console.error("Register error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-}
-
-//update
-export async function update(req, res) {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-
-    if (!id) return res.status(400).json({ message: "Id is required" });
-    const updateUser = await User.findByIdAndUpdate(id, updates, {
-      new: true, // return the updated document
-      runValidators: true, // validate the update fields
-    });
-    if (!updateUser) return res.status(404).json({ message: "User Not Found" });
-    res.status(200).json({ message: "User Updated", user: updateUser });
-  } catch (err) {
-    console.log("Update Error", err);
-    res.status(500).json({ message: "Server Error" });
-  }
-}
-
-//delete
-export async function remove(req, res) {
-  try {
-    const { id } = req.params;
-    if (!id) return res.status(400).json({ message: "Id  is required" });
-    const deletedUser = await User.findByIdAndDelete(id);
-    if (!deletedUser)
-      return res.status(404).json({
-        message: "User not Found",
-      });
-    res.status(201).json({ message: "User Deleted Sucessfully" });
-  } catch (err) {}
-}
+export const single_user = (req, res) => {
+  res.status(501).json({ message: "Not implemented" });
+};
