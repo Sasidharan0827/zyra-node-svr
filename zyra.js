@@ -25,7 +25,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 //CROS
 const allowedOrigins = [
   // "https://zyra.in", // live frontend (Angular/React/Vue etc.)
-  "http://localhost:4200", // optional: for local development
+  "http://localhost:4200",
+  "https://zyra-shop.netlify.app", // optional: for local development
 ];
 
 app.use(
