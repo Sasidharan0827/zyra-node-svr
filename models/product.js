@@ -8,6 +8,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String },
   oldPrice: { type: String, required: true },
   newPrice: { type: String, required: true },
+  istrending: { type: Boolean, default: false },
 });
 
 export default mongoose.model("Products", productSchema);
